@@ -8,6 +8,7 @@ build/
 external/
 data/raw/
 manuscript/
+submission/
 figures/*.tif
 GITHUB_ZENODO_INSTRUCTIONS.md
 python/build_manuscript_docx.py

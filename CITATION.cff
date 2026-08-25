@@ -1,6 +1,6 @@
 cff-version: 1.2.0
 message: "If you use this software, please cite the archived release and GSE197622 source study."
-title: "Cell number incompletely predicts functional neurogenesis during SSRI treatment: a stochastic multiscale analysis"
+title: "Cell number incompletely predicts functional neurogenesis during SSRI treatment in a stochastic multiscale analysis"
 type: software
 authors:
   - family-names: "Patni"

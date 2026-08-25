@@ -1,4 +1,4 @@
-# Cell number incompletely predicts functional neurogenesis during SSRI treatment
+# Cell number incompletely predicts functional neurogenesis during SSRI treatment in a stochastic multiscale analysis
 
 Reproducible code, derived results, and figures for a multiscale computational study of adult dentate-gyrus neurogenesis during SSRI treatment. The model is rodent-informed and does not estimate human neurogenesis or clinical antidepressant response.
 
