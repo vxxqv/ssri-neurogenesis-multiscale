@@ -10,6 +10,7 @@ authors:
 version: 1.0.0
 date-released: 2026-08-25
 repository-code: "https://github.com/vxxqv/ssri-neurogenesis-multiscale"
+doi: "10.5281/zenodo.22096470"
 license: MIT
 keywords:
   - adult hippocampal neurogenesis

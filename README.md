@@ -41,4 +41,4 @@ The workflow retrieves the matrices from the [source repository](https://github.
 
 ## Citation and license
 
-Citation metadata are provided in `CITATION.cff`. A Zenodo DOI will be added after archival. Original code, derived tables, and figures are available under the MIT License. The license does not cover separately downloaded source data.
+Citation metadata are provided in `CITATION.cff`. Version 1.0.0 is archived at [Zenodo](https://doi.org/10.5281/zenodo.22096470). Original code, derived tables, and figures are available under the MIT License. The license does not cover separately downloaded source data.
