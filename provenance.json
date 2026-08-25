@@ -1,0 +1,36 @@
+{
+  "analysis_date": "2026-08-25",
+  "timezone": "Asia/Dubai",
+  "seed_family": 20260825,
+  "software": {
+    "python": "3.12.13",
+    "numpy": "2.3.5",
+    "pandas": "3.0.1",
+    "pillow": "12.3.0",
+    "python_docx": "1.2.0",
+    "g++": "16.1.0",
+    "cpp_standard": "C++17"
+  },
+  "public_source": {
+    "geo_accession": "GSE197622",
+    "article_doi": "10.1038/s41380-022-01725-1",
+    "upstream_data_repository": "https://github.com/arulrayan/Integrative-multi-omics-landscape-of-fluoxetine-action-across-27-brain-regions",
+    "audited_commit": "c3ae3f6d2a98a81d6b0208f19b70fcc56dc50c5f",
+    "dorsal_tp10k_sha256": "9806EB6B222A7DB894C1B580E7077CDF9AC0705383306E41F85FC6657A1E30E5",
+    "ventral_tp10k_sha256": "1BCEC9A9AAC4939D43EBCC0A23869946E498BA242AF0398567D4388813DA0B8A"
+  },
+  "frozen_inputs": {
+    "parameter_priors_sha256": "ED3ACD9EE295BE0BC7CA5239A0F55CF2386882DCFBD1A5121CF44DF5CFBA2C8B",
+    "gene_modules_sha256": "5A62369E12B2B57716CE5FB1E26BFED4D4E6F88B0350C0F88F37212EFA6A5871"
+  },
+  "design": {
+    "phase_parameter_sets": 1500,
+    "phase_replicates_per_arm": 4,
+    "structural_parameter_sets": 300,
+    "structural_replicates_per_arm": 3,
+    "sobol_base_size": 128,
+    "sobol_replicates_per_arm": 2,
+    "simulation_days": 56,
+    "treatment_adaptation_days": 14
+  }
+}

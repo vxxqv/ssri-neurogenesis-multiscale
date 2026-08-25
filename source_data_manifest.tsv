@@ -1,0 +1,4 @@
+source	identifier	file	sha256	redistributed
+NCBI GEO	GSE197622	GEO series metadata	not_applicable	no
+Rayan et al. source repository	c3ae3f6d2a98a81d6b0208f19b70fcc56dc50c5f	single-cell DEGs/Single-cell collated tp10k_dorDG.txt	9806EB6B222A7DB894C1B580E7077CDF9AC0705383306E41F85FC6657A1E30E5	no
+Rayan et al. source repository	c3ae3f6d2a98a81d6b0208f19b70fcc56dc50c5f	single-cell DEGs/Single-cell collated tp10k_venDG.txt	1BCEC9A9AAC4939D43EBCC0A23869946E498BA242AF0398567D4388813DA0B8A	no

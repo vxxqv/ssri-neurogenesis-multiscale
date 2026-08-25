@@ -1,0 +1,26 @@
+{
+  "title": "Cell number incompletely predicts functional neurogenesis during SSRI treatment: a stochastic multiscale analysis",
+  "description": "Code, derived results, and figures for an evidence-informed stochastic model with independent GSE197622 transcriptomic reanalysis.",
+  "upload_type": "software",
+  "license": "MIT",
+  "creators": [
+    {
+      "name": "Patni, Vivaan",
+      "affiliation": "Independent Researcher"
+    }
+  ],
+  "keywords": [
+    "adult hippocampal neurogenesis",
+    "fluoxetine",
+    "SSRI",
+    "stochastic simulation",
+    "single-cell transcriptomics"
+  ],
+  "related_identifiers": [
+    {
+      "identifier": "https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE197622",
+      "relation": "isSupplementedBy",
+      "resource_type": "dataset"
+    }
+  ]
+}

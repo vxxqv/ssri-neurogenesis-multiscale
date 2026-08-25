@@ -1,0 +1,238 @@
+{
+  "source": "Rayan et al. 2022 authors' deposited replicate-level TP10K pseudobulk matrices",
+  "inference_unit": "pooled biological replicate within region and cell type",
+  "hard_qc_repeated": false,
+  "reason_qc_not_repeated": "analysis begins from post-QC deposited matrices; pre-QC barcodes and scDblFinder calls were not deposited in this processed object",
+  "regions": [
+    {
+      "region": "dorsal_DG",
+      "genes": 19127,
+      "pseudobulk_profiles": 94,
+      "cell_types": 12,
+      "treatment_profiles": {
+        "Sham": 51,
+        "FT": 43
+      },
+      "module_coverage": {
+        "proliferation": {
+          "requested": 7,
+          "present": 7,
+          "genes": [
+            "Mki67",
+            "Pcna",
+            "Mcm2",
+            "Mcm5",
+            "Top2a",
+            "Ccnd1",
+            "Ccnb1"
+          ]
+        },
+        "activation": {
+          "requested": 3,
+          "present": 3,
+          "genes": [
+            "Sox2",
+            "Ascl1",
+            "Fabp7"
+          ]
+        },
+        "differentiation": {
+          "requested": 4,
+          "present": 4,
+          "genes": [
+            "Eomes",
+            "Neurod1",
+            "Dcx",
+            "Tubb3"
+          ]
+        },
+        "maturation": {
+          "requested": 6,
+          "present": 6,
+          "genes": [
+            "Dcx",
+            "Neurod1",
+            "Calb2",
+            "Calb1",
+            "Prox1",
+            "Rbfox3"
+          ]
+        },
+        "integration": {
+          "requested": 6,
+          "present": 6,
+          "genes": [
+            "Syp",
+            "Syn1",
+            "Dlg4",
+            "Gria1",
+            "Gria2",
+            "Grin1"
+          ]
+        },
+        "activity": {
+          "requested": 5,
+          "present": 5,
+          "genes": [
+            "Arc",
+            "Egr1",
+            "Fos",
+            "Bdnf",
+            "Ntrk2"
+          ]
+        },
+        "survival": {
+          "requested": 6,
+          "present": 6,
+          "genes": [
+            "Bcl2",
+            "Bcl2l1",
+            "Akt1",
+            "Igf1",
+            "Bax",
+            "Casp3"
+          ]
+        },
+        "niche": {
+          "requested": 8,
+          "present": 8,
+          "genes": [
+            "Aif1",
+            "Cx3cr1",
+            "Trem2",
+            "Tyrobp",
+            "C1qa",
+            "C1qb",
+            "Gfap",
+            "S100b"
+          ]
+        },
+        "energy": {
+          "requested": 6,
+          "present": 4,
+          "genes": [
+            "Ndufa1",
+            "Ndufb8",
+            "Cox4i1",
+            "Cox5a"
+          ]
+        }
+      }
+    },
+    {
+      "region": "ventral_DG",
+      "genes": 19127,
+      "pseudobulk_profiles": 84,
+      "cell_types": 11,
+      "treatment_profiles": {
+        "Sham": 45,
+        "FT": 39
+      },
+      "module_coverage": {
+        "proliferation": {
+          "requested": 7,
+          "present": 7,
+          "genes": [
+            "Mki67",
+            "Pcna",
+            "Mcm2",
+            "Mcm5",
+            "Top2a",
+            "Ccnd1",
+            "Ccnb1"
+          ]
+        },
+        "activation": {
+          "requested": 3,
+          "present": 3,
+          "genes": [
+            "Sox2",
+            "Ascl1",
+            "Fabp7"
+          ]
+        },
+        "differentiation": {
+          "requested": 4,
+          "present": 4,
+          "genes": [
+            "Eomes",
+            "Neurod1",
+            "Dcx",
+            "Tubb3"
+          ]
+        },
+        "maturation": {
+          "requested": 6,
+          "present": 6,
+          "genes": [
+            "Dcx",
+            "Neurod1",
+            "Calb2",
+            "Calb1",
+            "Prox1",
+            "Rbfox3"
+          ]
+        },
+        "integration": {
+          "requested": 6,
+          "present": 6,
+          "genes": [
+            "Syp",
+            "Syn1",
+            "Dlg4",
+            "Gria1",
+            "Gria2",
+            "Grin1"
+          ]
+        },
+        "activity": {
+          "requested": 5,
+          "present": 5,
+          "genes": [
+            "Arc",
+            "Egr1",
+            "Fos",
+            "Bdnf",
+            "Ntrk2"
+          ]
+        },
+        "survival": {
+          "requested": 6,
+          "present": 6,
+          "genes": [
+            "Bcl2",
+            "Bcl2l1",
+            "Akt1",
+            "Igf1",
+            "Bax",
+            "Casp3"
+          ]
+        },
+        "niche": {
+          "requested": 8,
+          "present": 8,
+          "genes": [
+            "Aif1",
+            "Cx3cr1",
+            "Trem2",
+            "Tyrobp",
+            "C1qa",
+            "C1qb",
+            "Gfap",
+            "S100b"
+          ]
+        },
+        "energy": {
+          "requested": 6,
+          "present": 4,
+          "genes": [
+            "Ndufa1",
+            "Ndufb8",
+            "Cox4i1",
+            "Cox5a"
+          ]
+        }
+      }
+    }
+  ]
+}

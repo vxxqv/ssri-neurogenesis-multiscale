@@ -1,0 +1,17 @@
+*.exe
+*.obj
+*.o
+__pycache__/
+*.py[cod]
+.venv/
+build/
+external/
+data/raw/
+manuscript/
+figures/*.tif
+GITHUB_ZENODO_INSTRUCTIONS.md
+python/build_manuscript_docx.py
+python/update_release_links.py
+scripts/publish_to_github.ps1
+.DS_Store
+Thumbs.db

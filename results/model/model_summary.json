@@ -1,0 +1,14 @@
+{
+  "n_phase_parameter_sets": 1500,
+  "n_stochastic_replicates_per_set": 4,
+  "pearson_delta_extent_fni": 0.7748685400050495,
+  "spearman_delta_extent_fni": 0.7100094374107235,
+  "decoupled_count": 51,
+  "decoupled_fraction": 0.034,
+  "median_delta_extent": 20.0,
+  "median_delta_fni": 9.284191452999998,
+  "delta_extent_q025": -1.0,
+  "delta_extent_q975": 112.13124999999997,
+  "delta_fni_q025": -0.8753857997275,
+  "delta_fni_q975": 52.53024978024999
+}
