@@ -137,8 +137,8 @@ def figure2(results: Path, outdir: Path) -> None:
     ax.hlines(ypos, prediction.r2_low, prediction.r2_high, color=GRAY, linewidth=2)
     colors = [ORANGE if model == "process_aware" else GRAY for model in prediction.model]
     ax.scatter(prediction.r2, ypos, s=75, color=colors, zorder=3)
-    for y0, value, model in zip(ypos, prediction.r2, prediction.model):
-        ax.text(value + 0.025, y0, f"{value:.3f}", va="center", fontweight="bold", color=ORANGE if model == "process_aware" else INK)
+    for y0, value, high, model in zip(ypos, prediction.r2, prediction.r2_high, prediction.model):
+        ax.text(min(high + 0.018, 0.965), y0, f"{value:.3f}", va="center", ha="left", fontweight="bold", color=ORANGE if model == "process_aware" else INK)
     ax.set_yticks(ypos, prediction.label)
     ax.set_xlim(0.35, 1.0)
     ax.set_xlabel("Held-out R² for functional change")
@@ -204,14 +204,15 @@ def figure4(results: Path, outdir: Path) -> None:
 
     ax = axes[1, 0]
     subset = cross[cross.program == "integration_bias"].copy()
+    offsets = {"Sertraline": -9, "Fluoxetine": -8, "Citalopram": 0}
     for _, row in subset.iterrows():
         ax.plot([0, 1], [row.vitro, row.vivo], color="#BDBDBD", linewidth=1.7, zorder=1)
         ax.scatter(0, row.vitro, facecolor="white", edgecolor=INK, s=65, linewidth=1.3, zorder=2)
         ax.scatter(1, row.vivo, color=ORANGE, s=65, zorder=2)
-        ax.text(1.05, row.vivo, row.treated, va="center", fontsize=8.5)
+        ax.annotate(row.treated, (1, row.vivo), xytext=(-7, offsets.get(row.treated, 0)), textcoords="offset points", ha="right", va="center", fontsize=8.5)
     ax.axhline(0, color=INK, linewidth=0.8)
     ax.set_xticks([0, 1], ["Cultured neurons", "In vivo cortex"])
-    ax.set_xlim(-0.2, 1.45)
+    ax.set_xlim(-0.2, 1.08)
     ax.set_ylabel("Integration bias, Hedges’ g")
     panel(ax, "C", "The cellular context changes SSRI effects")
 
