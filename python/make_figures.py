@@ -139,7 +139,7 @@ def figure2(results: Path, outdir: Path) -> None:
     ax.scatter(prediction.r2, ypos, s=75, color=colors, zorder=3)
     for y0, value, high, model in zip(ypos, prediction.r2, prediction.r2_high, prediction.model):
         if model == "process_aware":
-            ax.annotate(f"{value:.3f}", (value, y0), xytext=(0, 10), textcoords="offset points", ha="center", va="bottom", fontweight="bold", color=ORANGE)
+            ax.annotate(f"{value:.3f}", (value, y0), xytext=(0, -10), textcoords="offset points", ha="center", va="top", fontweight="bold", color=ORANGE)
         else:
             ax.text(high + 0.018, y0, f"{value:.3f}", va="center", ha="left", fontweight="bold", color=INK)
     ax.set_yticks(ypos, prediction.label)
