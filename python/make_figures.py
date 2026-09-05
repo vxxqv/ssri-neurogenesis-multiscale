@@ -138,7 +138,10 @@ def figure2(results: Path, outdir: Path) -> None:
     colors = [ORANGE if model == "process_aware" else GRAY for model in prediction.model]
     ax.scatter(prediction.r2, ypos, s=75, color=colors, zorder=3)
     for y0, value, high, model in zip(ypos, prediction.r2, prediction.r2_high, prediction.model):
-        ax.text(min(high + 0.018, 0.965), y0, f"{value:.3f}", va="center", ha="left", fontweight="bold", color=ORANGE if model == "process_aware" else INK)
+        if model == "process_aware":
+            ax.annotate(f"{value:.3f}", (value, y0), xytext=(0, 10), textcoords="offset points", ha="center", va="bottom", fontweight="bold", color=ORANGE)
+        else:
+            ax.text(high + 0.018, y0, f"{value:.3f}", va="center", ha="left", fontweight="bold", color=INK)
     ax.set_yticks(ypos, prediction.label)
     ax.set_xlim(0.35, 1.0)
     ax.set_xlabel("Held-out R² for functional change")
