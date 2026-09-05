@@ -14,78 +14,75 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def main() -> None:
-    design = pd.read_csv(ROOT / "results" / "design.csv")
-    sim = pd.read_csv(ROOT / "results" / "simulation_results.csv")
-    phase = pd.read_csv(ROOT / "results" / "model" / "phase_space.csv")
-    effects = pd.read_csv(ROOT / "results" / "omics" / "module_effects.csv")
-    summary = json.loads((ROOT / "results" / "model" / "model_summary.json").read_text())
-    cross = pd.read_csv(ROOT / "results" / "integration" / "cross_layer_processes.csv")
-    cross_summary = json.loads((ROOT / "results" / "integration" / "cross_layer_summary.json").read_text())
+    model = ROOT / "results" / "model"
+    transcript = ROOT / "results" / "transcriptomics"
+    phase = pd.read_csv(model / "phase_space.csv")
+    summary = json.loads((model / "model_summary.json").read_text(encoding="utf-8"))
+    prediction = pd.read_csv(model / "predictive_information.csv").set_index("model")
+    temporal = pd.read_csv(model / "temporal_summary.csv")
+    numerical = json.loads((model / "numerical_validation.json").read_text(encoding="utf-8"))
+    programs = pd.read_csv(transcript / "program_effects.csv")
+    qc = pd.read_csv(transcript / "dataset_qc.csv")
+    robustness = pd.read_csv(transcript / "relative_score_robustness.csv")
+    splits = pd.read_csv(transcript / "relative_score_gene_splits.csv")
 
-    assert len(design) == len(sim), "design and simulation row counts differ"
-    assert int(sim.failed_reps.sum()) == 0, "simulator reported failed replicates"
-    state_columns = ["treat_Q", "treat_A", "treat_P", "treat_N", "treat_M", "treat_G"]
-    assert bool((sim[state_columns] >= 0).all().all()), "negative lineage state detected"
-    assert len(phase) == 1500, "primary phase design is not locked at 1,500 sets"
-    decoupled = int(((phase.delta_extent > 0) & (phase.delta_fni <= 0)).sum())
-    assert decoupled == summary["decoupled_count"] == 51, "mismatch count changed"
-    assert np.isclose(decoupled / len(phase), summary["decoupled_fraction"])
-    pearson = float(phase.delta_extent.corr(phase.delta_fni))
-    spearman = float(phase.delta_extent.rank().corr(phase.delta_fni.rank()))
-    assert np.isclose(pearson, summary["pearson_delta_extent_fni"], atol=1e-12)
-    assert np.isclose(spearman, summary["spearman_delta_extent_fni"], atol=1e-12)
-    assert len(effects) == 207, "global transcriptomic test family changed"
-    assert bool((effects.q_bh + 1e-12 >= effects.p_permutation).all()), "BH q below raw P"
-    assert int((effects.q_bh < 0.10).sum()) == 0, "molecular significance result changed"
-    cross_rho = float(cross.model_ST.rank().corr(cross.omics_evidence.rank()))
-    assert np.isclose(cross_rho, cross_summary["spearman_rho"], atol=1e-12)
-    assert np.isclose(cross_summary["permutation_p_two_sided"], 0.2681365931703415, atol=1e-12)
+    assert len(phase) == 2048
+    assert phase.n_rep.eq(16).all()
+    assert np.isclose(phase.delta_extent.corr(phase.delta_fni), summary["pearson_extent_fni"], atol=1e-12)
+    assert np.isclose(phase.delta_extent.rank().corr(phase.delta_fni.rank()), summary["spearman_extent_fni"], atol=1e-12)
+    assert summary["robust_mismatch_count"] == 1
+    assert np.isclose(summary["replicate_mismatch_fraction"], 0.040130615234375)
+    assert prediction.loc["process_aware", "r2"] > prediction.loc["cell_composition", "r2"] > prediction.loc["extent_only", "r2"]
+    assert prediction.loc["process_aware", "r2"] > 0.85
+    assert temporal.loc[temporal.mean_mismatch_probability.idxmax(), "t_end"] == 14
+    assert numerical["rk4_max_relative_error"] < 2e-7
+    assert numerical["null_max_absolute_extent"] == 0
+    assert numerical["null_max_absolute_fni"] == 0
+    assert numerical["shapley_max_efficiency_error"] < 1e-10
 
-    figure_shapes = {
-        "Fig1_architecture.png": (6000, 3600),
-        "Fig2_phase_space.png": (7200, 4500),
-        "Fig3_sensitivity.png": (7200, 4500),
-        "Fig4_omics_convergence.png": (7200, 4500),
-        "Graphical_Abstract.png": (7200, 3150),
-    }
-    for name, expected_size in figure_shapes.items():
-        path = ROOT / "figures" / name
-        assert path.stat().st_size > 10000, f"missing or empty {name}"
-        with Image.open(path) as image:
-            assert image.size == expected_size, f"unexpected dimensions for {name}"
-            assert image.convert("RGB").getpixel((0, 0)) == (255, 255, 255), f"nonwhite background in {name}"
+    assert set(qc.dataset) == {"GSE197622", "GSE43261", "GSE309750", "GSE222756", "GSE205325", "GSE292948"}
+    assert len(programs) == 966
+    assert programs[["hedges_g", "p_value", "q_global", "q_dataset"]].notna().all().all()
+    assert programs.p_value.between(0, 1).all()
+    assert programs.q_global.between(0, 1).all()
+    assert programs.q_dataset.between(0, 1).all()
+    mossy = programs[(programs.dataset == "GSE309750") & (programs.contrast == "mossy_cells_Fluoxetine_vs_Vehicle")].set_index("program")
+    assert mossy.loc["integration_bias", "hedges_g"] > 3.7
+    assert mossy.loc["exclusive_integration_bias", "hedges_g"] > 3.7
+    assert mossy.loc["integration_bias", "q_dataset"] < 0.01
+    response = programs[(programs.dataset == "GSE43261") & (programs.contrast == "dorsal_Responder_vs_Resistant")].set_index("program")
+    assert response.loc["exclusive_integration_bias", "hedges_g"] > 1.8
+    wide = programs[programs.program.isin(["integration_bias", "exclusive_integration_bias"])].pivot_table(index=["dataset", "contrast"], columns="program", values="hedges_g").dropna()
+    assert wide.integration_bias.rank().corr(wide.exclusive_integration_bias.rank()) > 0.98
+    mossy_robustness = robustness[(robustness.dataset == "GSE309750") & (robustness.contrast == "MC")]
+    assert len(mossy_robustness) == 3
+    assert mossy_robustness.hedges_g.min() > 2.2
+    assert mossy_robustness.loo_min_g.min() > 2.0
+    mossy_splits = splits[(splits.dataset == "GSE309750") & (splits.contrast == "MC")]
+    assert len(mossy_splits) == 200
+    assert ((mossy_splits.first_half_g > 0) & (mossy_splits.second_half_g > 0)).all()
 
-    forbidden_terms = [
-        bytes(values).decode("ascii")
-        for values in (
-            (79, 112, 101, 110, 65, 73),
-            (67, 104, 97, 116, 71, 80, 84),
-            (67, 111, 100, 101, 120),
-            (103, 101, 110, 101, 114, 97, 116, 105, 118, 101, 32, 65, 73),
-            (65, 73, 45, 97, 115, 115, 105, 115, 116, 101, 100),
-            (97, 114, 116, 105, 102, 105, 99, 105, 97, 108, 32, 105, 110, 116, 101, 108, 108, 105, 103, 101, 110, 99, 101),
-            (108, 97, 114, 103, 101, 32, 108, 97, 110, 103, 117, 97, 103, 101, 32, 109, 111, 100, 101, 108),
-            (109, 97, 99, 104, 105, 110, 101, 45, 103, 101, 110, 101, 114, 97, 116, 101, 100),
-            (67, 108, 97, 117, 100, 101),
-            (71, 101, 109, 105, 110, 105),
-        )
-    ]
-    forbidden = re.compile("|".join(re.escape(term) for term in forbidden_terms), re.IGNORECASE)
-    text_extensions = {".py", ".R", ".cpp", ".hpp", ".h", ".ps1", ".md", ".txt", ".json", ".cff", ".tsv", ".csv"}
-    for path in ROOT.rglob("*"):
-        if path.is_file() and path.suffix in text_extensions:
-            content = path.read_text(encoding="utf-8", errors="ignore")
-            assert forbidden.search(content) is None, f"forbidden metadata trace in {path}"
+    names = ["Fig1_study_architecture", "Fig2_model_results", "Fig3_mechanism", "Fig4_transcriptomic_evidence"]
+    for name in names:
+        for suffix in (".png", ".tiff", ".pdf"):
+            path = ROOT / "figures" / f"{name}{suffix}"
+            assert path.stat().st_size > 5000
+        with Image.open(ROOT / "figures" / f"{name}.png") as image:
+            assert min(image.size) > 4000
+            assert image.convert("RGB").getpixel((0, 0)) == (255, 255, 255)
 
     for path in ROOT.rglob("*.py"):
+        if any(part in {".venv", ".r-lib", "external", "work"} for part in path.parts):
+            continue
         tokens = tokenize.generate_tokens(io.StringIO(path.read_text(encoding="utf-8")).readline)
-        assert not any(token.type == tokenize.COMMENT for token in tokens), f"comment found in {path}"
-
-    for path in list(ROOT.rglob("*.R")) + list(ROOT.rglob("*.cpp")) + list(ROOT.rglob("*.hpp")) + list(ROOT.rglob("*.h")) + list(ROOT.rglob("*.ps1")):
+        assert not any(token.type == tokenize.COMMENT for token in tokens)
+    for path in list(ROOT.rglob("*.R")) + list(ROOT.rglob("*.cpp")) + list(ROOT.rglob("*.ps1")):
+        if any(part in {".venv", ".r-lib", "external", "work"} for part in path.parts):
+            continue
         content = path.read_text(encoding="utf-8", errors="ignore")
-        assert re.search(r"(^|[^:])//|/\*", content) is None, f"comment found in {path}"
+        assert re.search(r"(^|[^:])//|/\*", content) is None
         if path.suffix == ".R":
-            assert re.search(r"^\s*#", content, re.MULTILINE) is None, f"comment found in {path}"
+            assert re.search(r"^\s*#", content, re.MULTILINE) is None
 
     print("All release invariants passed.")
 

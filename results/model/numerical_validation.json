@@ -1,0 +1,7 @@
+{
+  "rk4_median_relative_error": 6.666642905910084e-11,
+  "rk4_max_relative_error": 8.751742262943464e-08,
+  "null_max_absolute_extent": 0.0,
+  "null_max_absolute_fni": 0.0,
+  "shapley_max_efficiency_error": 1.1368683772161603e-13
+}

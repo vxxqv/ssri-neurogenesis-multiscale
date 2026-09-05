@@ -1,0 +1,19 @@
+{
+  "atlas_dg_specificity": {
+    "difference": -2.253303040001763,
+    "exact_p": 0.26666666666666666,
+    "permutations": 45
+  },
+  "cross_ssri_integration": {
+    "positive_contrasts": 1,
+    "contrasts": 6,
+    "median_effect": -0.7882591242278264
+  },
+  "cross_ssri_context_concordance": {
+    "same_direction": 27,
+    "comparisons": 42
+  },
+  "globally_significant_program_tests": 210,
+  "dataset_significant_program_tests": 251,
+  "total_program_tests": 966
+}

@@ -1,44 +1,29 @@
-# Cell number incompletely predicts functional neurogenesis during SSRI treatment in a stochastic multiscale analysis
+# SSRI neurogenesis model
 
-Reproducible code, derived results, and figures for a multiscale computational study of adult dentate-gyrus neurogenesis during SSRI treatment. The model is rodent-informed and does not estimate human neurogenesis or clinical antidepressant response.
+This project asks a simple question: does producing more new hippocampal cells always produce more useful neurogenesis? It combines an exact stochastic lineage model with six public mouse and rat transcriptomic datasets. No new animal or human experiment was performed.
 
-## What is included
+## What the model does
 
-- A six-state C++17 Gillespie lineage model
-- Paired treatment-control uncertainty and sensitivity analyses
-- Replicate-aware reanalysis of GSE197622
-- Model and transcriptomic cross-layer integration
-- Locked result tables, figure data, and reproducibility tests
-- Matplotlib, Seaborn, R, and ggplot2 figure code
+Think of neurogenesis as an assembly line. Cells move from stem cells to integrated neurons. SSRIs can change six parts of that line: activation, proliferation, maturation, survival, integration, and efficacy. The model compares cell number with a functional index that also considers whether integrated cells work effectively.
 
-## Main findings
+## Main results
 
-- 1,500 parameter sets with four stochastic replicates per condition
-- Extent versus functional neurogenesis index: Pearson r = 0.7749
-- 51 of 1,500 systems showed the prespecified extent-function mismatch
-- No transcriptomic test survived global BH FDR below 0.10 across 207 tests
-- Seven-process cross-layer association: rho = -0.50, permutation p = 0.268
+- Cell number predicted some functional change, but a process-aware model predicted much more in held-out simulations: R2 = 0.864 versus 0.470.
+- A cell-gain without functional-gain pattern was most common at day 14 and became less common by day 56.
+- In independent mossy-cell data, fluoxetine shifted gene activity toward integration rather than cell-production programs. The effect survived three scoring methods, every leave-one-out test, and 200 random gene splits.
+- Responder data showed the same direction, but this comparison remains exploratory after the stricter multiple-testing correction.
 
-## Reproduce on Windows
+These are computational and secondary-data results. They do not show clinical benefit or prove that the model is biologically complete.
 
-Requirements: Python 3.12+, R 4.3+, a C++17 compiler, Git, and PowerShell 7.
+## Run it
+
+Install Python, R, and a C++17 compiler, then run:
 
 ```powershell
 python -m pip install -r requirements.txt
-Rscript .\scripts\install_r_packages.R
-Set-ExecutionPolicy -Scope Process Bypass
 .\scripts\run_analysis.ps1
-python .\tests\test_invariants.py
 ```
 
-The workflow downloads the audited public input, compiles the simulator, runs the analyses, regenerates the figures, and checks the locked numerical results.
+The script downloads public data, runs the analyses, rebuilds the figures, and checks the results. See [RESULTS.md](RESULTS.md) for a short explanation and [source_data_manifest.tsv](source_data_manifest.tsv) for data credits.
 
-## Public input data
-
-The transcriptomic analysis uses replicate-level TP10K matrices from Rayan et al., *Molecular Psychiatry* 27 (2022), 4510-4525, [doi:10.1038/s41380-022-01725-1](https://doi.org/10.1038/s41380-022-01725-1), GEO [GSE197622](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE197622).
-
-The workflow retrieves the matrices from the [source repository](https://github.com/arulrayan/Integrative-multi-omics-landscape-of-fluoxetine-action-across-27-brain-regions) at audited commit `c3ae3f6d2a98a81d6b0208f19b70fcc56dc50c5f`. They are not redistributed here.
-
-## Citation and license
-
-Citation metadata are provided in `CITATION.cff`. Version 1.0.0 is archived at [Zenodo](https://doi.org/10.5281/zenodo.22096470). Original code, derived tables, and figures are available under the MIT License. The license does not cover separately downloaded source data.
+Code is released under the MIT License. Public source data keep their original terms.

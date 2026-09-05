@@ -4,12 +4,15 @@
 __pycache__/
 *.py[cod]
 .venv/
+.r-lib/
 build/
 external/
 data/raw/
+work/
 manuscript/
 submission/
 figures/*.tif
+figures_v2/
 GITHUB_ZENODO_INSTRUCTIONS.md
 python/build_manuscript_docx.py
 python/update_release_links.py

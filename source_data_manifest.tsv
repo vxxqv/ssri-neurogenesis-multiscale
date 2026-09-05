@@ -1,4 +1,10 @@
-source	identifier	file	sha256	redistributed
-NCBI GEO	GSE197622	GEO series metadata	not_applicable	no
-Rayan et al. source repository	c3ae3f6d2a98a81d6b0208f19b70fcc56dc50c5f	single-cell DEGs/Single-cell collated tp10k_dorDG.txt	9806EB6B222A7DB894C1B580E7077CDF9AC0705383306E41F85FC6657A1E30E5	no
-Rayan et al. source repository	c3ae3f6d2a98a81d6b0208f19b70fcc56dc50c5f	single-cell DEGs/Single-cell collated tp10k_venDG.txt	1BCEC9A9AAC4939D43EBCC0A23869946E498BA242AF0398567D4388813DA0B8A	no
+accession	organism	assay	analysis_role	publication	doi
+GSE197622	Rattus norvegicus	single-cell RNA-seq pseudobulk	cell-type and dorsoventral map	Rayan et al. 2022	10.1038/s41380-022-01725-1
+GSE43261	Mus musculus	microarray	fluoxetine responder versus resistant validation	Samuels et al. 2014	10.1371/journal.pone.0085136
+GSE309750	Mus musculus	TRAP-seq	granule, mossy-cell, and hippocampal-circuit validation	Oh et al. 2026	10.1038/s41380-026-03461-2
+GSE222756	Rattus norvegicus	bulk RNA-seq	10-region and three-antidepressant atlas	Rayan et al. 2024	10.1038/s41380-024-02619-0
+GSE205325	Rattus norvegicus	bulk RNA-seq	chronic-stress hippocampal context	Demin et al. 2022	10.1038/s41598-022-22688-x
+GSE292948	Mus musculus	RNA-seq	fluoxetine, sertraline, and citalopram in vitro and in vivo	Yamamoto and Abe 2025	10.1016/j.isci.2025.113800
+GO	Mus musculus; Rattus norvegicus	ontology annotations	prespecified biological programs	Gene Ontology Consortium	10.1093/genetics/iyad031
+Ensembl release 116	Mus musculus; Rattus norvegicus	gene annotation	identifier mapping	Ensembl	not applicable
+GPL1261	Mus musculus	array annotation	probe-to-gene mapping	NCBI GEO	not applicable

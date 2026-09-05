@@ -6,7 +6,6 @@
 #include <iostream>
 #include <limits>
 #include <random>
-#include <sstream>
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
@@ -17,6 +16,18 @@ struct Row {
     double d(const std::string& key) const { return std::stod(v.at(key)); }
     long long i(const std::string& key) const { return std::stoll(v.at(key)); }
     std::string s(const std::string& key) const { return v.at(key); }
+};
+
+struct Endpoint {
+    double extent = 0.0;
+    double fni = 0.0;
+    double q = 0.0;
+    double a = 0.0;
+    double p = 0.0;
+    double n = 0.0;
+    double m = 0.0;
+    double g = 0.0;
+    bool failed = false;
 };
 
 static std::vector<std::string> split_csv(const std::string& line) {
@@ -39,16 +50,8 @@ static uint64_t mix64(uint64_t x) {
     return x ^ (x >> 31);
 }
 
-struct Endpoint {
-    double extent = 0.0;
-    double fni = 0.0;
-    double q = 0.0, a = 0.0, p = 0.0, n = 0.0, m = 0.0, g = 0.0;
-    bool failed = false;
-};
-
 static double ramp(double multiplier, double t, double tau) {
-    if (multiplier <= 0.0) return 1.0;
-    return std::exp(std::log(multiplier) * (1.0 - std::exp(-t / std::max(1e-6, tau))));
+    return std::exp(std::log(std::max(1e-9, multiplier)) * (1.0 - std::exp(-t / std::max(1e-6, tau))));
 }
 
 static Endpoint simulate(const Row& r, bool treated, uint64_t seed) {
@@ -57,27 +60,19 @@ static Endpoint simulate(const Row& r, bool treated, uint64_t seed) {
     long long Q = r.i("Q0"), A = r.i("A0"), P = r.i("P0"), N = r.i("N0"), M = r.i("M0"), G = r.i("G0");
     double F = static_cast<double>(G) * r.d("eff_mean");
     const double t_end = r.d("t_end"), tau = r.d("tau");
-    const std::string model = r.s("model");
     double t = 0.0;
     bool failed = false;
     for (long long event = 0; event < 3000000 && t < t_end; ++event) {
         double ma = 1.0, mp = 1.0, mm = 1.0, mi = 1.0, me = 1.0, ms = 1.0;
-        if (treated && model != "null") {
-            if (model == "full" || model == "proliferation") {
-                ma = ramp(r.d("tx_activation"), t, tau);
-                mp = ramp(r.d("tx_prolif"), t, tau);
-            }
-            if (model == "full" || model == "maturation") {
-                mm = ramp(r.d("tx_maturation"), t, tau);
-                ms = ramp(r.d("tx_survival"), t, tau);
-            }
-            if (model == "full" || model == "integration") {
-                mi = ramp(r.d("tx_integration"), t, tau);
-                me = ramp(r.d("tx_eff"), t, tau);
-            }
+        if (treated) {
+            if (r.i("activation_on")) ma = ramp(r.d("tx_activation"), t, tau);
+            if (r.i("proliferation_on")) mp = ramp(r.d("tx_prolif"), t, tau);
+            if (r.i("maturation_on")) mm = ramp(r.d("tx_maturation"), t, tau);
+            if (r.i("integration_on")) mi = ramp(r.d("tx_integration"), t, tau);
+            if (r.i("efficacy_on")) me = ramp(r.d("tx_eff"), t, tau);
+            if (r.i("survival_on")) ms = ramp(r.d("tx_survival"), t, tau);
         }
-
-        std::vector<double> a = {
+        std::vector<double> propensities = {
             r.d("k_qa") * ma * Q,
             r.d("k_aq") * A,
             r.d("b_a") * mp * A,
@@ -92,15 +87,15 @@ static Endpoint simulate(const Row& r, bool treated, uint64_t seed) {
             r.d("d_g") * ms * G
         };
         double total = 0.0;
-        for (double x : a) total += std::max(0.0, x);
+        for (double value : propensities) total += std::max(0.0, value);
         if (!(total > 0.0) || !std::isfinite(total)) break;
         double u1 = std::max(unif(rng), std::numeric_limits<double>::min());
         t += -std::log(u1) / total;
         if (t > t_end) break;
         double target = unif(rng) * total, cumulative = 0.0;
-        size_t reaction = a.size() - 1;
-        for (size_t j = 0; j < a.size(); ++j) {
-            cumulative += a[j];
+        size_t reaction = propensities.size() - 1;
+        for (size_t j = 0; j < propensities.size(); ++j) {
+            cumulative += propensities[j];
             if (target <= cumulative) { reaction = j; break; }
         }
         switch (reaction) {
@@ -115,13 +110,14 @@ static Endpoint simulate(const Row& r, bool treated, uint64_t seed) {
             case 8: if (N > 0) --N; break;
             case 9:
                 if (M > 0) {
-                    --M; ++G;
-                    double mean = std::max(1e-6, r.d("eff_mean") * me);
+                    --M;
+                    ++G;
+                    double expected = std::max(1e-6, r.d("eff_mean") * me);
                     double cv = std::max(1e-6, r.d("eff_cv"));
                     double sigma2 = std::log(1.0 + cv * cv);
-                    double mu = std::log(mean) - 0.5 * sigma2;
-                    std::lognormal_distribution<double> ln(mu, std::sqrt(sigma2));
-                    F += ln(rng);
+                    double mu = std::log(expected) - 0.5 * sigma2;
+                    std::lognormal_distribution<double> draw(mu, std::sqrt(sigma2));
+                    F += draw(rng);
                 }
                 break;
             case 10: if (M > 0) --M; break;
@@ -135,56 +131,84 @@ static Endpoint simulate(const Row& r, bool treated, uint64_t seed) {
     Endpoint e;
     e.extent = static_cast<double>(M + G);
     e.fni = F;
-    e.q = Q; e.a = A; e.p = P; e.n = N; e.m = M; e.g = G;
+    e.q = Q;
+    e.a = A;
+    e.p = P;
+    e.n = N;
+    e.m = M;
+    e.g = G;
     e.failed = failed;
     return e;
 }
 
-static double mean(const std::vector<double>& x) {
-    double s = 0.0; for (double v : x) s += v; return x.empty() ? std::nan("") : s / x.size();
+static double mean(const std::vector<double>& values) {
+    double total = 0.0;
+    for (double value : values) total += value;
+    return values.empty() ? std::nan("") : total / values.size();
 }
-static double sd(const std::vector<double>& x) {
-    if (x.size() < 2) return 0.0;
-    double m = mean(x), s = 0.0; for (double v : x) s += (v-m)*(v-m);
-    return std::sqrt(s / (x.size()-1));
+
+static double sd(const std::vector<double>& values) {
+    if (values.size() < 2) return 0.0;
+    double center = mean(values), total = 0.0;
+    for (double value : values) total += (value - center) * (value - center);
+    return std::sqrt(total / (values.size() - 1));
 }
 
 int main(int argc, char** argv) {
-    if (argc != 3) {
-        std::cerr << "usage: ssa_batch design.csv output.csv\n";
+    if (argc != 4) {
+        std::cerr << "usage: ssa_batch design.csv aggregate.csv replicates.csv\n";
         return 2;
     }
     std::ifstream in(argv[1]);
-    if (!in) throw std::runtime_error("cannot open design file");
-    std::ofstream out(argv[2]);
-    if (!out) throw std::runtime_error("cannot open output file");
+    std::ofstream aggregate(argv[2]);
+    std::ofstream replicate(argv[3]);
+    if (!in || !aggregate || !replicate) throw std::runtime_error("cannot open input or output file");
     std::string line;
     std::getline(in, line);
     auto header = split_csv(line);
-    out << "set_id,design_group,model,n_rep,failed_reps,control_extent,treat_extent,delta_extent,sd_delta_extent,control_fni,treat_fni,delta_fni,sd_delta_fni,treat_Q,treat_A,treat_P,treat_N,treat_M,treat_G\n";
-    out << std::setprecision(10);
+    aggregate << "set_id,base_id,design_group,model,t_end,n_rep,failed_reps,control_extent,treat_extent,delta_extent,sd_delta_extent,control_fni,treat_fni,delta_fni,sd_delta_fni,treat_Q,treat_A,treat_P,treat_N,treat_M,treat_G\n";
+    replicate << "set_id,base_id,design_group,model,t_end,replicate,failed,control_extent,treat_extent,delta_extent,control_fni,treat_fni,delta_fni,control_Q,control_A,control_P,control_N,control_M,control_G,treat_Q,treat_A,treat_P,treat_N,treat_M,treat_G\n";
+    aggregate << std::setprecision(10);
+    replicate << std::setprecision(10);
     while (std::getline(in, line)) {
         if (line.empty()) continue;
         auto cells = split_csv(line);
         if (cells.size() != header.size()) throw std::runtime_error("malformed design row");
-        Row r; for (size_t i = 0; i < header.size(); ++i) r.v[header[i]] = cells[i];
+        Row r;
+        for (size_t i = 0; i < header.size(); ++i) r.v[header[i]] = cells[i];
         int reps = static_cast<int>(r.i("reps"));
+        if (reps <= 0) continue;
         uint64_t base_seed = static_cast<uint64_t>(r.i("seed"));
         std::vector<double> ce, te, de, cf, tf, df, tq, ta, tp, tn, tm, tg;
         int failures = 0;
         for (int rep = 0; rep < reps; ++rep) {
-            uint64_t s = mix64(base_seed ^ mix64(static_cast<uint64_t>(rep + 1)));
-            Endpoint c = simulate(r, false, s);
-            Endpoint t = simulate(r, true, s);
-            failures += static_cast<int>(c.failed) + static_cast<int>(t.failed);
-            ce.push_back(c.extent); te.push_back(t.extent); de.push_back(t.extent-c.extent);
-            cf.push_back(c.fni); tf.push_back(t.fni); df.push_back(t.fni-c.fni);
-            tq.push_back(t.q); ta.push_back(t.a); tp.push_back(t.p); tn.push_back(t.n); tm.push_back(t.m); tg.push_back(t.g);
+            uint64_t seed = mix64(base_seed ^ mix64(static_cast<uint64_t>(rep + 1)));
+            Endpoint control = simulate(r, false, seed);
+            Endpoint treatment = simulate(r, true, seed);
+            bool failed = control.failed || treatment.failed;
+            failures += static_cast<int>(failed);
+            ce.push_back(control.extent);
+            te.push_back(treatment.extent);
+            de.push_back(treatment.extent - control.extent);
+            cf.push_back(control.fni);
+            tf.push_back(treatment.fni);
+            df.push_back(treatment.fni - control.fni);
+            tq.push_back(treatment.q);
+            ta.push_back(treatment.a);
+            tp.push_back(treatment.p);
+            tn.push_back(treatment.n);
+            tm.push_back(treatment.m);
+            tg.push_back(treatment.g);
+            replicate << r.s("set_id") << ',' << r.s("base_id") << ',' << r.s("design_group") << ',' << r.s("model") << ',' << r.d("t_end") << ',' << rep + 1 << ',' << failed << ','
+                      << control.extent << ',' << treatment.extent << ',' << treatment.extent - control.extent << ','
+                      << control.fni << ',' << treatment.fni << ',' << treatment.fni - control.fni << ','
+                      << control.q << ',' << control.a << ',' << control.p << ',' << control.n << ',' << control.m << ',' << control.g << ','
+                      << treatment.q << ',' << treatment.a << ',' << treatment.p << ',' << treatment.n << ',' << treatment.m << ',' << treatment.g << '\n';
         }
-        out << r.s("set_id") << ',' << r.s("design_group") << ',' << r.s("model") << ',' << reps << ',' << failures << ','
-            << mean(ce) << ',' << mean(te) << ',' << mean(de) << ',' << sd(de) << ','
-            << mean(cf) << ',' << mean(tf) << ',' << mean(df) << ',' << sd(df) << ','
-            << mean(tq) << ',' << mean(ta) << ',' << mean(tp) << ',' << mean(tn) << ',' << mean(tm) << ',' << mean(tg) << '\n';
+        aggregate << r.s("set_id") << ',' << r.s("base_id") << ',' << r.s("design_group") << ',' << r.s("model") << ',' << r.d("t_end") << ',' << reps << ',' << failures << ','
+                  << mean(ce) << ',' << mean(te) << ',' << mean(de) << ',' << sd(de) << ','
+                  << mean(cf) << ',' << mean(tf) << ',' << mean(df) << ',' << sd(df) << ','
+                  << mean(tq) << ',' << mean(ta) << ',' << mean(tp) << ',' << mean(tn) << ',' << mean(tm) << ',' << mean(tg) << '\n';
     }
     return 0;
 }

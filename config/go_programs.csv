@@ -1,0 +1,9 @@
+program,go_id,layer,label
+neurogenesis,GO:0022008,extent,Neurogenesis
+precursor_proliferation,GO:0061351,extent,Neural precursor proliferation
+neuron_differentiation,GO:0030182,extent,Neuron differentiation
+neuron_maturation,GO:0042551,integration,Neuron maturation
+projection_development,GO:0031175,integration,Neuron projection development
+synapse_organization,GO:0050808,integration,Synapse organization
+synaptic_plasticity,GO:0048167,integration,Regulation of synaptic plasticity
+neuronal_survival,GO:0043524,integration,Neuronal survival

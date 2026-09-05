@@ -1,19 +1,18 @@
 cff-version: 1.2.0
-message: "If you use this software, please cite the archived release and GSE197622 source study."
-title: "Cell number incompletely predicts functional neurogenesis during SSRI treatment in a stochastic multiscale analysis"
+message: "Please cite this software and the public studies used in your analysis."
+title: "SSRI neurogenesis multiscale model and analysis"
 type: software
 authors:
   - family-names: "Patni"
     given-names: "Vivaan"
     email: "vivaanpatni2010@gmail.com"
     affiliation: "Independent Researcher"
-version: 1.0.0
-date-released: 2026-08-25
+version: 2.0.0
+date-released: 2026-09-05
 repository-code: "https://github.com/vxxqv/ssri-neurogenesis-multiscale"
-doi: "10.5281/zenodo.22096470"
 license: MIT
 keywords:
   - adult hippocampal neurogenesis
-  - fluoxetine
+  - selective serotonin reuptake inhibitors
   - stochastic simulation
-  - single-cell transcriptomics
+  - transcriptomics

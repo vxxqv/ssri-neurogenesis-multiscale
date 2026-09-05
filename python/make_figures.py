@@ -3,334 +3,253 @@ from __future__ import annotations
 from pathlib import Path
 import argparse
 import json
-import os
 import subprocess
 import numpy as np
 import pandas as pd
 import matplotlib as mpl
+mpl.use("Agg")
 import matplotlib.pyplot as plt
 import seaborn as sns
 from matplotlib.colors import LinearSegmentedColormap
-from matplotlib.lines import Line2D
-from matplotlib.patches import Circle, Ellipse, FancyArrowPatch, FancyBboxPatch, Rectangle
+from matplotlib.patches import Circle, FancyArrowPatch
 
 
-INK = "#161616"
-TEXT = "#404040"
-GRID = "#DEDAD3"
-PAPER = "#FFFFFF"
-TEAL = "#008B74"
-ORANGE = "#D75B28"
-PURPLE = "#7655B5"
-GOLD = "#D99A18"
-ROSE = "#B5486D"
-PALE_TEAL = "#E6F3F0"
-PALE_ORANGE = "#F9ECE5"
-PALE_PURPLE = "#F0ECF7"
+INK = "#171717"
+GRAY = "#696969"
+ORANGE = "#D9572B"
 
 
-def configure_style() -> None:
-    sns.set_theme(style="whitegrid", context="paper")
-    mpl.rcParams.update(
-        {
-            "figure.facecolor": PAPER,
-            "axes.facecolor": PAPER,
-            "savefig.facecolor": PAPER,
-            "font.family": "DejaVu Sans",
-            "text.color": INK,
-            "axes.labelcolor": INK,
-            "axes.edgecolor": INK,
-            "axes.titlecolor": INK,
-            "xtick.color": TEXT,
-            "ytick.color": TEXT,
-            "grid.color": GRID,
-            "grid.linewidth": 0.7,
-            "axes.linewidth": 0.9,
-            "figure.dpi": 120,
-        }
-    )
+def style() -> None:
+    sns.set_theme(style="whitegrid")
+    mpl.rcParams.update({
+        "font.family": "DejaVu Sans",
+        "font.size": 9,
+        "axes.labelcolor": INK,
+        "axes.edgecolor": INK,
+        "axes.titlecolor": INK,
+        "text.color": INK,
+        "xtick.color": GRAY,
+        "ytick.color": GRAY,
+        "grid.color": "#DDDDDD",
+        "grid.linewidth": 0.55,
+        "figure.facecolor": "white",
+        "axes.facecolor": "white",
+        "savefig.facecolor": "white",
+    })
 
 
-def require_columns(frame: pd.DataFrame, name: str, columns: set[str]) -> None:
-    missing = sorted(columns.difference(frame.columns))
-    if missing:
-        raise ValueError(f"{name} is missing required columns: {', '.join(missing)}")
-    if frame.empty:
-        raise ValueError(f"{name} is empty")
+def panel(ax: plt.Axes, label: str, title: str) -> None:
+    ax.text(0.0, 1.04, f"{label}  {title}", transform=ax.transAxes, ha="left", va="bottom", fontsize=11, fontweight="bold")
 
 
-def save_figure(figure: plt.Figure, outdir: Path, stem: str) -> None:
-    outdir.mkdir(parents=True, exist_ok=True)
-    figure.savefig(outdir / f"{stem}.png", dpi=600, facecolor=PAPER)
-    figure.savefig(outdir / f"{stem}.tif", dpi=600, facecolor=PAPER, pil_kwargs={"compression": "tiff_lzw"})
-    plt.close(figure)
-
-
-def rounded_box(axis: plt.Axes, x: float, y: float, width: float, height: float, edge: str, fill: str = PAPER, radius: float = 0.02, linewidth: float = 1.6) -> FancyBboxPatch:
-    patch = FancyBboxPatch(
-        (x, y),
-        width,
-        height,
-        boxstyle=f"round,pad=0.012,rounding_size={radius}",
-        transform=axis.transAxes,
-        facecolor=fill,
-        edgecolor=edge,
-        linewidth=linewidth,
-    )
-    axis.add_patch(patch)
-    return patch
-
-
-def arrow(axis: plt.Axes, start: tuple[float, float], end: tuple[float, float], color: str = TEXT, width: float = 1.5, connection: str = "arc3") -> None:
-    axis.add_patch(
-        FancyArrowPatch(
-            start,
-            end,
-            transform=axis.transAxes,
-            arrowstyle="-|>",
-            mutation_scale=12,
-            linewidth=width,
-            color=color,
-            connectionstyle=connection,
-        )
-    )
-
-
-def add_panel_label(axis: plt.Axes, label: str, x: float = -0.08, y: float = 1.05) -> None:
-    axis.text(x, y, label, transform=axis.transAxes, fontsize=13, fontweight="bold", color=INK, va="top")
+def save(fig: plt.Figure, outdir: Path, name: str) -> None:
+    fig.savefig(outdir / f"{name}.pdf", bbox_inches="tight")
+    fig.savefig(outdir / f"{name}.png", dpi=600, bbox_inches="tight")
+    fig.savefig(outdir / f"{name}.tiff", dpi=600, bbox_inches="tight", pil_kwargs={"compression": "tiff_lzw"})
+    plt.close(fig)
 
 
 def figure1(outdir: Path) -> None:
-    figure = plt.figure(figsize=(10, 6), constrained_layout=False)
-    axis = figure.add_axes([0.055, 0.06, 0.89, 0.89])
-    axis.set_axis_off()
-    axis.set_xlim(0, 1)
-    axis.set_ylim(0, 1)
-    axis.set_autoscale_on(False)
-    axis.text(0.00, 0.98, "A", fontsize=13, fontweight="bold", transform=axis.transAxes, va="top")
-    axis.text(0.045, 0.98, "Lineage model", fontsize=12, fontweight="bold", transform=axis.transAxes, va="top")
-    states = [
-        ("Q", "Quiescent\nstem cell"),
-        ("A", "Activated\nprecursor"),
-        ("P", "Proliferating\nprogenitor"),
-        ("N", "Neuroblast"),
-        ("M", "Maturing\nneuron"),
-        ("G", "Integrated\ngranule cell"),
+    fig = plt.figure(figsize=(12, 7.2), layout="constrained")
+    grid = fig.add_gridspec(2, 1, height_ratios=[1.05, 1.0])
+    ax = fig.add_subplot(grid[0])
+    ax.set_xlim(-0.6, 5.7)
+    ax.set_ylim(-1.15, 1.05)
+    ax.axis("off")
+    panel(ax, "A", "Lineage model and treatment channels")
+    nodes = ["Q", "A", "P", "N", "M", "G"]
+    labels = ["Quiescent\nstem cell", "Activated\nprecursor", "Proliferating\nprogenitor", "Neuroblast", "Maturing\nneuron", "Integrated\ngranule cell"]
+    channels = ["Activation", "Proliferation", "Maturation", "Integration", "Efficacy", "Survival"]
+    for i in range(5):
+        ax.add_patch(FancyArrowPatch((i + 0.24, 0), (i + 0.76, 0), arrowstyle="-|>", mutation_scale=10, linewidth=1.4, color=INK))
+    for i, (node, label) in enumerate(zip(nodes, labels)):
+        face = ORANGE if node == "G" else "white"
+        color = "white" if node == "G" else INK
+        ax.add_patch(Circle((i, 0), 0.23, facecolor=face, edgecolor=INK if node != "G" else ORANGE, linewidth=1.5))
+        ax.text(i, 0, node, ha="center", va="center", fontsize=14, fontweight="bold", color=color)
+        ax.text(i, -0.37, label, ha="center", va="top", fontsize=8.5, color=GRAY)
+    channel_x = [0.15, 1.15, 2.15, 3.15, 5.0, 4.35]
+    for x, label in zip(channel_x, channels):
+        ax.text(x, 0.58, label, ha="center", va="center", fontsize=8.5, color=ORANGE, fontweight="bold")
+        ax.plot([x, x], [0.47, 0.28], color=ORANGE, linewidth=1.1)
+    ax.text(0, -0.98, "Numerical extent", fontsize=10, fontweight="bold")
+    ax.text(1.13, -0.98, "M + G", fontsize=15, fontweight="bold")
+    ax.text(3.1, -0.98, "Functional index", fontsize=10, fontweight="bold", color=ORANGE)
+    ax.text(4.36, -0.98, "Σ integrated cells × efficacy", fontsize=13, fontweight="bold", color=ORANGE)
+
+    ax = fig.add_subplot(grid[1])
+    panel(ax, "B", "Independent evidence structure")
+    rows = ["GSE197622", "GSE43261", "GSE309750", "GSE222756", "GSE205325", "GSE292948"]
+    cols = ["Cell type", "Treatment\nresponse", "Hippocampal\ncircuit", "Brain\nregions", "Stress\ncontext", "Three\nSSRIs"]
+    values = np.eye(6)
+    cmap = LinearSegmentedColormap.from_list("evidence", ["white", ORANGE])
+    sns.heatmap(values, ax=ax, cmap=cmap, vmin=0, vmax=1, cbar=False, linewidths=1.2, linecolor="white", xticklabels=cols, yticklabels=rows)
+    ax.tick_params(axis="x", rotation=0, labelsize=8.5)
+    ax.tick_params(axis="y", rotation=0, labelsize=9)
+    ax.set_xlabel("")
+    ax.set_ylabel("")
+    for i, text in enumerate(["Pseudobulk cell map", "Responder versus resistant", "Granule and mossy cells", "10 regions, 3 antidepressants", "Stress plus fluoxetine", "Fluoxetine, sertraline, citalopram"]):
+        ax.text(6.18, i + 0.5, text, va="center", fontsize=8.5, color=GRAY, clip_on=False)
+    save(fig, outdir, "Fig1_study_architecture")
+
+
+def figure2(results: Path, outdir: Path) -> None:
+    phase = pd.read_csv(results / "model" / "phase_space.csv")
+    temporal = pd.read_csv(results / "model" / "temporal_summary.csv")
+    prediction = pd.read_csv(results / "model" / "predictive_information.csv")
+    validation = pd.read_csv(results / "model" / "deterministic_validation.csv")
+    summary = json.loads((results / "model" / "model_summary.json").read_text(encoding="utf-8"))
+    fig, axes = plt.subplots(2, 2, figsize=(12, 8), layout="constrained")
+    ax = axes[0, 0]
+    mean_mismatch = (phase.delta_extent > 0) & (phase.delta_fni <= 0)
+    ax.scatter(phase.loc[~mean_mismatch, "delta_extent"], phase.loc[~mean_mismatch, "delta_fni"], s=12, color="#BDBDBD", alpha=0.55, linewidth=0)
+    ax.scatter(phase.loc[mean_mismatch, "delta_extent"], phase.loc[mean_mismatch, "delta_fni"], s=25, color=ORANGE, alpha=0.9, linewidth=0)
+    ax.axhline(0, color=INK, linewidth=0.8)
+    ax.axvline(0, color=INK, linewidth=0.8)
+    x = phase.delta_extent.to_numpy()
+    y = phase.delta_fni.to_numpy()
+    slope, intercept = np.polyfit(x, y, 1)
+    line = np.linspace(np.quantile(x, 0.005), np.quantile(x, 0.995), 100)
+    ax.plot(line, slope * line + intercept, color=INK, linewidth=1.2)
+    ax.set_xlim(np.quantile(x, 0.005), np.quantile(x, 0.995))
+    ax.set_ylim(np.quantile(y, 0.005), np.quantile(y, 0.995))
+    ax.set_xlabel("Change in numerical extent")
+    ax.set_ylabel("Change in functional index")
+    ax.text(0.04, 0.92, f"r = {summary['pearson_extent_fni']:.3f}", transform=ax.transAxes, fontweight="bold")
+    ax.text(0.04, 0.84, f"{mean_mismatch.sum()} mean mismatches", transform=ax.transAxes, color=ORANGE, fontweight="bold")
+    panel(ax, "A", "Paired stochastic outcomes")
+
+    ax = axes[0, 1]
+    ax.plot(temporal.t_end, temporal.mean_mismatch_probability * 100, color=ORANGE, marker="o", linewidth=2.2, markersize=6)
+    peak = temporal.loc[temporal.mean_mismatch_probability.idxmax()]
+    ax.scatter([peak.t_end], [peak.mean_mismatch_probability * 100], s=90, facecolor="white", edgecolor=ORANGE, linewidth=2, zorder=4)
+    ax.text(peak.t_end + 2, peak.mean_mismatch_probability * 100, f"Peak {peak.mean_mismatch_probability * 100:.1f}%", va="center", color=ORANGE, fontweight="bold")
+    ax.set_xlabel("Treatment day")
+    ax.set_ylabel("Replicate mismatch probability (%)")
+    ax.set_xticks(temporal.t_end)
+    ax.set_ylim(0, max(16, temporal.mean_mismatch_probability.max() * 120))
+    panel(ax, "B", "Mismatch is most likely early")
+
+    ax = axes[1, 0]
+    labels = {"extent_only": "Extent only", "cell_composition": "Maturing + integrated", "process_aware": "Process aware"}
+    prediction = prediction.assign(label=prediction.model.map(labels)).sort_values("r2")
+    ypos = np.arange(len(prediction))
+    ax.hlines(ypos, prediction.r2_low, prediction.r2_high, color=GRAY, linewidth=2)
+    colors = [ORANGE if model == "process_aware" else GRAY for model in prediction.model]
+    ax.scatter(prediction.r2, ypos, s=75, color=colors, zorder=3)
+    for y0, value, model in zip(ypos, prediction.r2, prediction.model):
+        ax.text(value + 0.025, y0, f"{value:.3f}", va="center", fontweight="bold", color=ORANGE if model == "process_aware" else INK)
+    ax.set_yticks(ypos, prediction.label)
+    ax.set_xlim(0.35, 1.0)
+    ax.set_xlabel("Held-out R² for functional change")
+    panel(ax, "C", "Information beyond cell count")
+
+    ax = axes[1, 1]
+    sample = validation.sample(900, random_state=20260825)
+    ax.scatter(sample.delta_fni_ode, sample.delta_fni_ssa, s=12, color="#AFAFAF", alpha=0.55, linewidth=0)
+    limits = np.quantile(np.r_[sample.delta_fni_ode, sample.delta_fni_ssa], [0.005, 0.995])
+    ax.plot(limits, limits, color=ORANGE, linewidth=1.6)
+    ax.set_xlim(limits)
+    ax.set_ylim(limits)
+    ax.set_xlabel("Deterministic functional change")
+    ax.set_ylabel("Mean stochastic functional change")
+    ax.text(0.04, 0.92, f"r = {summary['ode_ssa_fni_r']:.3f}", transform=ax.transAxes, fontweight="bold")
+    ax.text(0.04, 0.84, f"MAE = {summary['ode_ssa_fni_mae']:.2f}", transform=ax.transAxes, color=GRAY)
+    panel(ax, "D", "Independent numerical agreement")
+    save(fig, outdir, "Fig2_model_results")
+
+
+def figure4(results: Path, outdir: Path) -> None:
+    programs = pd.read_csv(results / "transcriptomics" / "program_effects.csv")
+    regional = pd.read_csv(results / "transcriptomics" / "regional_drug_concordance.csv")
+    cross = pd.read_csv(results / "transcriptomics" / "cross_ssri_context.csv")
+    fig, axes = plt.subplots(2, 2, figsize=(12, 8.5), layout="constrained")
+    key = [
+        ("GSE309750", "mossy_cells_Fluoxetine_vs_Vehicle", "Mossy cells, fluoxetine"),
+        ("GSE43261", "dorsal_Responder_vs_Resistant", "Dorsal DG, responder versus resistant"),
+        ("GSE205325", "stress_Fluoxetine_vs_stress", "Stressed hippocampus, fluoxetine"),
+        ("GSE292948", "vivo_Fluoxetine_vs_Control", "In vivo cortex, fluoxetine"),
+        ("GSE222756", "dorDG_FT_vs_Control", "Dorsal DG atlas, fluoxetine"),
+        ("GSE222756", "venDG_FT_vs_Control", "Ventral DG atlas, fluoxetine"),
     ]
-    x_positions = np.linspace(0.08, 0.92, len(states))
-    axis.plot([0.08, 0.92], [0.79, 0.79], transform=axis.transAxes, color=INK, linewidth=1.4, solid_capstyle="round")
-    for index, (symbol, label) in enumerate(states):
-        x = float(x_positions[index])
-        color = ORANGE if index == len(states) - 1 else INK
-        fill = PALE_ORANGE if index == len(states) - 1 else PAPER
-        axis.scatter([x], [0.79], transform=axis.transAxes, s=760, facecolor=fill, edgecolor=color, linewidth=1.8, zorder=4)
-        axis.text(x, 0.79, symbol, transform=axis.transAxes, ha="center", va="center", fontsize=13, fontweight="bold", color=INK, zorder=5)
-        axis.text(x, 0.685, label, transform=axis.transAxes, ha="center", va="center", fontsize=8.8, color=TEXT, linespacing=1.0)
-        if index > 0:
-            axis.plot([x, x], [0.755, 0.61], transform=axis.transAxes, color="#A6A6A6", linestyle=(0, (2, 3)), linewidth=0.9, zorder=1)
-            axis.scatter([x], [0.605], transform=axis.transAxes, s=15, color="#888888", marker="v", zorder=3)
-    axis.text(0.50, 0.575, "Stage specific loss", transform=axis.transAxes, fontsize=8.8, color=TEXT, ha="center")
-    axis.plot([0.00, 1.00], [0.535, 0.535], transform=axis.transAxes, color=GRID, linewidth=1.0)
-    axis.text(0.00, 0.49, "B", fontsize=13, fontweight="bold", transform=axis.transAxes, va="top")
-    axis.text(0.045, 0.49, "Study logic and molecular audit", fontsize=12, fontweight="bold", transform=axis.transAxes, va="top")
-    axis.text(0.08, 0.385, "PAIRED DESIGN", transform=axis.transAxes, fontsize=8.1, fontweight="bold", color=TEXT, ha="center")
-    axis.text(0.08, 0.335, "Control and SSRI", transform=axis.transAxes, fontsize=10.5, fontweight="bold", color=INK, ha="center")
-    axis.text(0.08, 0.295, "1,500 parameter sets", transform=axis.transAxes, fontsize=8.6, color=TEXT, ha="center")
-    arrow(axis, (0.18, 0.335), (0.30, 0.335), INK, 1.2)
-    axis.add_patch(Rectangle((0.31, 0.235), 0.34, 0.20, transform=axis.transAxes, facecolor=PAPER, edgecolor=INK, linewidth=1.3))
-    axis.plot([0.31, 0.65], [0.335, 0.335], transform=axis.transAxes, color=GRID, linewidth=1.0)
-    axis.plot([0.31, 0.65], [0.235, 0.235], transform=axis.transAxes, color=ORANGE, linewidth=3.2, solid_capstyle="butt")
-    axis.text(0.48, 0.395, "Numerical extent", transform=axis.transAxes, fontsize=10.2, fontweight="bold", color=INK, ha="center")
-    axis.text(0.48, 0.355, "M + G", transform=axis.transAxes, fontsize=9.2, color=INK, ha="center")
-    axis.text(0.48, 0.295, "Functional index", transform=axis.transAxes, fontsize=10.2, fontweight="bold", color=INK, ha="center")
-    axis.text(0.48, 0.255, "integration and efficacy", transform=axis.transAxes, fontsize=9.2, color=ORANGE, ha="center")
-    arrow(axis, (0.66, 0.335), (0.72, 0.335), INK, 1.2)
-    axis.plot([0.735, 0.735], [0.245, 0.425], transform=axis.transAxes, color=ORANGE, linewidth=3.0, solid_capstyle="round")
-    axis.text(0.765, 0.395, "JOINT INTERPRETATION", transform=axis.transAxes, fontsize=8.1, fontweight="bold", color=TEXT, ha="left")
-    axis.text(0.765, 0.345, "Concordance or mismatch", transform=axis.transAxes, fontsize=10.5, fontweight="bold", color=INK, ha="left")
-    axis.text(0.765, 0.285, "51 of 1,500 mismatched", transform=axis.transAxes, fontsize=9.5, color=ORANGE, fontweight="bold", ha="left")
-    axis.plot([0.08, 0.92], [0.145, 0.145], transform=axis.transAxes, color=GRID, linewidth=1.0)
-    axis.text(0.08, 0.095, "INDEPENDENT MOLECULAR AUDIT", transform=axis.transAxes, fontsize=8.1, fontweight="bold", color=TEXT, ha="left")
-    axis.text(0.325, 0.095, "GSE197622", transform=axis.transAxes, fontsize=10.2, fontweight="bold", color=INK, ha="left")
-    arrow(axis, (0.44, 0.095), (0.55, 0.095), TEXT, 1.0)
-    axis.text(0.58, 0.095, "No module survived global FDR correction", transform=axis.transAxes, fontsize=9.5, color=TEXT, ha="left", va="center")
-    save_figure(figure, outdir, "Fig1_architecture")
+    ax = axes[0, 0]
+    ordinary, exclusive, labels = [], [], []
+    for dataset, contrast, label in key:
+        block = programs[(programs.dataset == dataset) & (programs.contrast == contrast)].set_index("program")
+        ordinary.append(block.loc["integration_bias", "hedges_g"])
+        exclusive.append(block.loc["exclusive_integration_bias", "hedges_g"])
+        labels.append(label)
+    y = np.arange(len(labels))[::-1]
+    ax.axvline(0, color=INK, linewidth=0.8)
+    for yi, a, b in zip(y, ordinary, exclusive):
+        ax.plot([a, b], [yi, yi], color="#BEBEBE", linewidth=1.4)
+    ax.scatter(ordinary, y, color=ORANGE, s=55, label="All ontology genes", zorder=3)
+    ax.scatter(exclusive, y, facecolor="white", edgecolor=INK, linewidth=1.3, s=55, label="Nonoverlapping genes", zorder=3)
+    ax.set_yticks(y, labels)
+    ax.set_xlabel("Integration bias, Hedges’ g")
+    ax.legend(frameon=False, loc="lower right", fontsize=8)
+    panel(ax, "A", "Integration beyond numerical programs")
 
+    ax = axes[0, 1]
+    heat = regional[regional.program == "integration_bias"].set_index("context")[["FT", "Bupropion", "Desipramine"]]
+    order = ["dorDG", "venDG", "BLA", "CGC", "ILC", "LConly", "mPOA", "NACShell", "PLC", "Raphe"]
+    heat = heat.loc[order]
+    cmap = LinearSegmentedColormap.from_list("signed", [INK, "white", ORANGE])
+    sns.heatmap(heat, ax=ax, cmap=cmap, center=0, annot=True, fmt=".1f", linewidths=0.8, linecolor="white", cbar_kws={"label": "Integration bias (g)", "shrink": 0.75})
+    ax.set_xlabel("")
+    ax.set_ylabel("")
+    ax.set_xticklabels(["Fluoxetine", "Bupropion", "Desipramine"], rotation=22, ha="right")
+    ax.set_yticklabels(ax.get_yticklabels(), rotation=0)
+    panel(ax, "B", "Region and antidepressant specificity")
 
-def figure2(outdir: Path, phase: pd.DataFrame, summary: dict) -> None:
-    require_columns(phase, "phase_space.csv", {"delta_extent", "delta_fni", "decoupled"})
-    phase = phase.copy()
-    phase["decoupled"] = phase["decoupled"].astype(bool)
-    x_low, x_high = phase["delta_extent"].quantile([0.005, 0.995])
-    y_low, y_high = phase["delta_fni"].quantile([0.005, 0.995])
-    clipped = phase.assign(
-        display_extent=phase["delta_extent"].clip(x_low, x_high),
-        display_fni=phase["delta_fni"].clip(y_low, y_high),
-    )
-    figure = plt.figure(figsize=(12, 7.5))
-    marginal_x = figure.add_axes([0.085, 0.79, 0.625, 0.14])
-    main = figure.add_axes([0.085, 0.19, 0.625, 0.58], sharex=marginal_x)
-    marginal_y = figure.add_axes([0.72, 0.19, 0.055, 0.58], sharey=main)
-    summary_axis = figure.add_axes([0.81, 0.16, 0.16, 0.77])
-    other = clipped.loc[~clipped["decoupled"]]
-    mismatch = clipped.loc[clipped["decoupled"]]
-    sns.scatterplot(data=other, x="display_extent", y="display_fni", ax=main, s=18, color=PURPLE, alpha=0.25, edgecolor=None, rasterized=True)
-    sns.regplot(data=clipped, x="display_extent", y="display_fni", ax=main, scatter=False, ci=95, color=TEAL, line_kws={"linewidth": 2.0}, truncate=False)
-    sns.scatterplot(data=mismatch, x="display_extent", y="display_fni", ax=main, s=42, marker="X", color=ORANGE, edgecolor=PAPER, linewidth=0.5, zorder=5)
-    sns.histplot(data=clipped, x="display_extent", bins=30, ax=marginal_x, color=PURPLE, alpha=0.78, edgecolor=PAPER, linewidth=0.4)
-    sns.histplot(data=clipped, y="display_fni", bins=30, ax=marginal_y, color=TEAL, alpha=0.78, edgecolor=PAPER, linewidth=0.4)
-    main.axvline(0, color=TEXT, linewidth=1.0, linestyle=(0, (4, 3)))
-    main.axhline(0, color=TEXT, linewidth=1.0, linestyle=(0, (4, 3)))
-    main.set_xlabel("Change in numerical extent (model cells)", fontsize=11, labelpad=8)
-    main.set_ylabel("Change in functional neurogenesis index", fontsize=11, labelpad=8)
-    main.grid(True, color=GRID, linewidth=0.7)
-    main.spines[["top", "right"]].set_visible(False)
-    marginal_x.set_axis_off()
-    marginal_y.set_axis_off()
-    legend = [
-        Line2D([0], [0], marker="o", color="none", markerfacecolor=PURPLE, alpha=0.45, markersize=7, label="Other parameter sets"),
-        Line2D([0], [0], marker="X", color="none", markerfacecolor=ORANGE, markeredgecolor=ORANGE, markersize=7, label="Mismatch"),
-        Line2D([0], [0], color=TEAL, linewidth=2, label="Linear trend with 95% CI"),
-    ]
-    figure.legend(handles=legend, loc="lower left", bbox_to_anchor=(0.08, 0.055), frameon=False, fontsize=8.5, ncol=3, borderaxespad=0, columnspacing=1.6, handlelength=2.8)
-    summary_axis.set_axis_off()
-    summary_axis.set_xlim(0, 1)
-    summary_axis.set_ylim(0, 1)
-    metrics = [
-        ("Pearson r", f"{summary['pearson_delta_extent_fni']:.3f}", TEAL),
-        ("Spearman rho", f"{summary['spearman_delta_extent_fni']:.3f}", PURPLE),
-        ("Mismatch", f"{summary['decoupled_count']} / {summary['n_phase_parameter_sets']}", ORANGE),
-        ("Mismatch rate", f"{100 * summary['decoupled_fraction']:.1f}%", ROSE),
-    ]
-    for index, (label, value, color) in enumerate(metrics):
-        y = 0.87 - index * 0.18
-        summary_axis.text(0.03, y + 0.035, label, transform=summary_axis.transAxes, fontsize=8.8, color=TEXT, va="center")
-        summary_axis.text(0.03, y - 0.025, value, transform=summary_axis.transAxes, fontsize=15, fontweight="bold", color=color, va="center")
-        if index < len(metrics) - 1:
-            summary_axis.plot([0.03, 0.97], [y - 0.09, y - 0.09], transform=summary_axis.transAxes, color=GRID, linewidth=0.9)
-    summary_axis.text(0.02, 0.02, "Axes show the 0.5th to 99.5th\npercentiles. All values remain in\nthe source table.", transform=summary_axis.transAxes, fontsize=7.6, color=TEXT, va="bottom", linespacing=1.35)
-    figure.text(0.06, 0.955, "A   Paired simulation phase space", fontsize=12.5, fontweight="bold", color=INK)
-    figure.text(0.79, 0.955, "B   Model summary", fontsize=12.5, fontweight="bold", color=INK)
-    save_figure(figure, outdir, "Fig2_phase_space")
+    ax = axes[1, 0]
+    subset = cross[cross.program == "integration_bias"].copy()
+    for _, row in subset.iterrows():
+        ax.plot([0, 1], [row.vitro, row.vivo], color="#BDBDBD", linewidth=1.7, zorder=1)
+        ax.scatter(0, row.vitro, facecolor="white", edgecolor=INK, s=65, linewidth=1.3, zorder=2)
+        ax.scatter(1, row.vivo, color=ORANGE, s=65, zorder=2)
+        ax.text(1.05, row.vivo, row.treated, va="center", fontsize=8.5)
+    ax.axhline(0, color=INK, linewidth=0.8)
+    ax.set_xticks([0, 1], ["Cultured neurons", "In vivo cortex"])
+    ax.set_xlim(-0.2, 1.45)
+    ax.set_ylabel("Integration bias, Hedges’ g")
+    panel(ax, "C", "The cellular context changes SSRI effects")
 
-
-def figure4(outdir: Path, effects: pd.DataFrame, cross: pd.DataFrame, cross_summary: dict) -> None:
-    require_columns(effects, "module_effects.csv", {"region", "cell_type", "process", "hedges_g"})
-    require_columns(cross, "cross_layer_processes.csv", {"process", "model_ST", "omics_evidence"})
-    effects = effects.copy()
-    effects["region_short"] = effects["region"].map({"dorsal_DG": "D", "ventral_DG": "V"}).fillna(effects["region"])
-    effects["profile"] = effects["region_short"] + " · " + effects["cell_type"].str.replace("_", " ", regex=False)
-    process_order = ["activation", "activity", "differentiation", "energy", "integration", "maturation", "niche", "proliferation", "survival"]
-    profile_order = effects["profile"].drop_duplicates().tolist()
-    matrix = effects.pivot_table(index="process", columns="profile", values="hedges_g", aggfunc="first").reindex(index=process_order, columns=profile_order)
-    figure = plt.figure(figsize=(12, 7.5))
-    grid = figure.add_gridspec(1, 2, width_ratios=[3.4, 1.25], left=0.08, right=0.97, top=0.90, bottom=0.27, wspace=0.22)
-    heat_axis = figure.add_subplot(grid[0, 0])
-    rank_axis = figure.add_subplot(grid[0, 1])
-    diverging = LinearSegmentedColormap.from_list("effect", [PURPLE, "#C8BCE0", PAPER, "#F2C6B3", ORANGE], N=256)
-    limit = max(1.0, float(np.nanmax(np.abs(matrix.to_numpy()))))
-    sns.heatmap(matrix, ax=heat_axis, cmap=diverging, center=0, vmin=-limit, vmax=limit, linewidths=0.5, linecolor=PAPER, cbar_kws={"label": "Hedges' g", "shrink": 0.72, "pad": 0.02})
-    heat_axis.set_xlabel("")
-    heat_axis.set_ylabel("")
-    heat_axis.set_xticklabels(heat_axis.get_xticklabels(), rotation=63, ha="right", rotation_mode="anchor", fontsize=7.2)
-    heat_axis.set_yticklabels([label.get_text().capitalize() for label in heat_axis.get_yticklabels()], rotation=0, fontsize=8.5)
-    heat_axis.tick_params(length=0)
-    heat_axis.set_title("A   Transcriptomic effects", loc="left", fontsize=11.5, fontweight="bold", pad=14, color=INK)
-    cross = cross.copy()
-    cross["model_rank"] = cross["model_ST"].rank(ascending=False, method="average")
-    cross["omics_rank"] = cross["omics_evidence"].rank(ascending=False, method="average")
-    cross = cross.sort_values("model_rank", ascending=False).reset_index(drop=True)
-    y_positions = np.arange(len(cross))
-    for y, row in zip(y_positions, cross.itertuples()):
-        line_color = ORANGE if abs(row.model_rank - row.omics_rank) >= 3 else GRID
-        rank_axis.plot([row.model_rank, row.omics_rank], [y, y], color=line_color, linewidth=2.2, solid_capstyle="round", zorder=1)
-    rank_axis.scatter(cross["model_rank"], y_positions, s=58, color=TEAL, edgecolor=PAPER, linewidth=0.8, label="Model rank", zorder=3)
-    rank_axis.scatter(cross["omics_rank"], y_positions, s=62, facecolor=PAPER, edgecolor=ORANGE, linewidth=1.8, label="Molecular rank", zorder=3)
-    rank_axis.set_yticks(y_positions, [value.capitalize() for value in cross["process"]], fontsize=8.5)
-    rank_axis.set_xticks(range(1, len(cross) + 1))
-    rank_axis.set_xlim(0.5, len(cross) + 0.5)
-    rank_axis.set_xlabel("Rank, 1 = strongest", fontsize=9.5)
-    rank_axis.set_title("B   Process ranks", loc="left", fontsize=11.5, fontweight="bold", pad=14, color=INK)
-    rank_axis.text(1.0, 1.015, f"rho = {cross_summary['spearman_rho']:.2f}   p = {cross_summary['permutation_p_two_sided']:.3f}", transform=rank_axis.transAxes, ha="right", va="bottom", fontsize=8.7, color=TEXT)
-    rank_axis.grid(axis="x", color=GRID)
-    rank_axis.grid(axis="y", visible=False)
-    rank_axis.spines[["top", "right", "left"]].set_visible(False)
-    rank_axis.tick_params(axis="y", length=0)
-    rank_axis.legend(frameon=False, loc="upper center", bbox_to_anchor=(0.5, -0.20), ncol=2, fontsize=8.3)
-    figure.text(0.08, 0.11, "No module test survived global BH FDR q < 0.10.", fontsize=9.0, fontweight="bold", color=INK)
-    figure.text(0.08, 0.075, "Purple indicates lower and orange indicates higher module scores with fluoxetine.", fontsize=9.2, color=TEXT)
-    save_figure(figure, outdir, "Fig4_omics_convergence")
-
-
-def graphical_abstract(outdir: Path, summary: dict) -> None:
-    figure = plt.figure(figsize=(12, 5.25))
-    axis = figure.add_axes([0.03, 0.05, 0.94, 0.90])
-    axis.set_axis_off()
-    axis.set_xlim(0, 1)
-    axis.set_ylim(0, 1)
-    axis.set_autoscale_on(False)
-    steps = [
-        ("1", "Sample", "1,500 biological\nparameter sets", TEAL, PALE_TEAL),
-        ("2", "Simulate", "Paired control and\nfluoxetine-like arms", PURPLE, PALE_PURPLE),
-        ("3", "Separate", "Numerical extent\nfrom functional index", ORANGE, PALE_ORANGE),
-        ("4", "Challenge", "Independent GSE197622\nprocess ranking", ROSE, "#F8EAF0"),
-    ]
-    x_positions = [0.0, 0.255, 0.51, 0.765]
-    for index, (number, title, detail, color, fill) in enumerate(steps):
-        x = x_positions[index]
-        rounded_box(axis, x, 0.66, 0.205, 0.29, color, fill, 0.03, 1.6)
-        axis.add_patch(Circle((x + 0.035, 0.88), 0.025, transform=axis.transAxes, facecolor=color, edgecolor=color))
-        axis.text(x + 0.035, 0.88, number, transform=axis.transAxes, ha="center", va="center", color=PAPER, fontsize=9.5, fontweight="bold")
-        axis.text(x + 0.075, 0.88, title, transform=axis.transAxes, fontsize=12, fontweight="bold", color=INK, va="center")
-        axis.text(x + 0.025, 0.775, detail, transform=axis.transAxes, fontsize=10, color=TEXT, va="center", linespacing=1.35)
-        if index < len(steps) - 1:
-            arrow(axis, (x + 0.21, 0.805), (x_positions[index + 1] - 0.008, 0.805), color, 1.7)
-    rounded_box(axis, 0.10, 0.08, 0.34, 0.22, TEAL, PAPER, 0.03, 1.8)
-    rounded_box(axis, 0.56, 0.08, 0.34, 0.22, ORANGE, PAPER, 0.03, 1.8)
-    axis.text(0.13, 0.24, "STRONG OVERALL RELATIONSHIP", transform=axis.transAxes, fontsize=9.2, fontweight="bold", color=TEAL)
-    axis.text(0.13, 0.155, f"Pearson r = {summary['pearson_delta_extent_fni']:.3f}", transform=axis.transAxes, fontsize=18, fontweight="bold", color=INK)
-    axis.text(0.59, 0.24, "PRESPECIFIED MISMATCH", transform=axis.transAxes, fontsize=9.2, fontweight="bold", color=ORANGE)
-    axis.text(0.59, 0.155, f"{summary['decoupled_count']} / {summary['n_phase_parameter_sets']}   ({100 * summary['decoupled_fraction']:.1f}%)", transform=axis.transAxes, fontsize=18, fontweight="bold", color=INK)
-    axis.text(0.59, 0.105, "Extent increased without positive FNI", transform=axis.transAxes, fontsize=9.5, color=TEXT)
-    axis.text(0.50, 0.19, "BUT", transform=axis.transAxes, fontsize=10, fontweight="bold", color=PURPLE, ha="center")
-    save_figure(figure, outdir, "Graphical_Abstract")
-
-
-def run_ggplot_figure(results: Path, outdir: Path, rscript: str, r_library: str | None) -> None:
-    script = Path(__file__).with_name("make_sensitivity_figure.R")
-    environment = os.environ.copy()
-    if r_library:
-        environment["R_LIBS_USER"] = r_library
-    subprocess.run([rscript, str(script), str(results), str(outdir)], check=True, env=environment)
-
-
-def load_inputs(results: Path) -> dict[str, object]:
-    return {
-        "phase": pd.read_csv(results / "model" / "phase_space.csv"),
-        "summary": json.loads((results / "model" / "model_summary.json").read_text(encoding="utf-8")),
-        "effects": pd.read_csv(results / "omics" / "module_effects.csv"),
-        "cross": pd.read_csv(results / "integration" / "cross_layer_processes.csv"),
-        "cross_summary": json.loads((results / "integration" / "cross_layer_summary.json").read_text(encoding="utf-8")),
-    }
+    ax = axes[1, 1]
+    wide = programs[programs.program.isin(["integration_bias", "exclusive_integration_bias"])].pivot_table(index=["dataset", "contrast"], columns="program", values="hedges_g").dropna()
+    ax.scatter(wide.integration_bias, wide.exclusive_integration_bias, s=18, color="#AFAFAF", alpha=0.65, linewidth=0)
+    highlight = wide.loc[[index for index in wide.index if "mossy_cells" in index[1] or "dorsal_Responder_vs_Resistant" in index[1]]]
+    ax.scatter(highlight.integration_bias, highlight.exclusive_integration_bias, s=55, color=ORANGE, zorder=3)
+    limits = np.quantile(np.r_[wide.integration_bias, wide.exclusive_integration_bias], [0.01, 0.99])
+    padding = (limits[1] - limits[0]) * 0.06
+    display_limits = [limits[0] - padding, limits[1] + padding]
+    ax.plot(display_limits, display_limits, color=INK, linewidth=1)
+    ax.set_xlim(display_limits)
+    ax.set_ylim(display_limits)
+    rho = wide.integration_bias.rank().corr(wide.exclusive_integration_bias.rank())
+    ax.text(0.04, 0.92, f"Spearman ρ = {rho:.3f}", transform=ax.transAxes, fontweight="bold")
+    ax.set_xlabel("All-gene integration bias")
+    ax.set_ylabel("Nonoverlapping-gene integration bias")
+    panel(ax, "D", "Ontology overlap does not drive the pattern")
+    save(fig, outdir, "Fig4_transcriptomic_evidence")
 
 
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--results", required=True)
     parser.add_argument("--outdir", required=True)
-    parser.add_argument("--rscript", default=os.environ.get("RSCRIPT_EXE", "Rscript"))
-    parser.add_argument("--r-library", default=os.environ.get("R_LIBS_USER"))
-    arguments = parser.parse_args()
-    configure_style()
-    results = Path(arguments.results).resolve()
-    outdir = Path(arguments.outdir).resolve()
-    inputs = load_inputs(results)
+    parser.add_argument("--rscript", default="Rscript")
+    parser.add_argument("--r-library", required=True)
+    args = parser.parse_args()
+    results = Path(args.results)
+    outdir = Path(args.outdir)
+    outdir.mkdir(parents=True, exist_ok=True)
+    style()
     figure1(outdir)
-    figure2(outdir, inputs["phase"], inputs["summary"])
-    run_ggplot_figure(results, outdir, arguments.rscript, arguments.r_library)
-    figure4(outdir, inputs["effects"], inputs["cross"], inputs["cross_summary"])
-    graphical_abstract(outdir, inputs["summary"])
-    print(f"Wrote Matplotlib, Seaborn, and ggplot2 figures to {outdir}")
+    figure2(results, outdir)
+    figure4(results, outdir)
+    script = Path(__file__).with_name("make_mechanism_figure.R")
+    subprocess.run([args.rscript, str(script), str(results), str(outdir), str(Path(args.r_library).resolve())], check=True)
 
 
 if __name__ == "__main__":

@@ -1,14 +1,27 @@
 {
-  "n_phase_parameter_sets": 1500,
-  "n_stochastic_replicates_per_set": 4,
-  "pearson_delta_extent_fni": 0.7748685400050495,
-  "spearman_delta_extent_fni": 0.7100094374107235,
-  "decoupled_count": 51,
-  "decoupled_fraction": 0.034,
-  "median_delta_extent": 20.0,
-  "median_delta_fni": 9.284191452999998,
-  "delta_extent_q025": -1.0,
-  "delta_extent_q975": 112.13124999999997,
-  "delta_fni_q025": -0.8753857997275,
-  "delta_fni_q975": 52.53024978024999
+  "phase_parameter_sets": 2048,
+  "replicates_per_phase_set": 16,
+  "pearson_extent_fni": 0.7852324529440272,
+  "spearman_extent_fni": 0.6899310142432088,
+  "robust_mismatch_count": 1,
+  "robust_mismatch_fraction": 0.00048828125,
+  "robust_aligned_count": 1727,
+  "replicate_mismatch_fraction": 0.040130615234375,
+  "mean_mismatch_probability": 0.06718175551470587,
+  "median_delta_extent": 20.4375,
+  "median_delta_fni": 9.47772070759375,
+  "extent_variance": {
+    "within_stochastic_variance": 410.60260823567705,
+    "between_parameter_variance": 1301.2723392698397,
+    "intraclass_correlation": 0.7601445077317168
+  },
+  "fni_variance": {
+    "within_stochastic_variance": 63.64159706942125,
+    "between_parameter_variance": 217.41392180481722,
+    "intraclass_correlation": 0.773562186843595
+  },
+  "ode_ssa_extent_r": 0.9928046256869055,
+  "ode_ssa_fni_r": 0.9932126953546526,
+  "ode_ssa_extent_mae": 2.9483248505684214,
+  "ode_ssa_fni_mae": 1.1909185292755313
 }
